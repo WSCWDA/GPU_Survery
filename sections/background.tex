@@ -1,0 +1,15 @@
+\section{Background and Evolution}
+
+\subsection{From staged copies to direct data paths}
+
+The traditional path for GPU I/O consists of storage $\rightarrow$ host DRAM $\rightarrow$ GPU memory, with CPU threads handling submission/completion and copy orchestration. The model inherits mature OS abstractions but incurs extra memory bandwidth consumption, cache pollution, and synchronization overhead \cite{linux_io_uring,spdk_overview}.
+
+GDS restructures the path by enabling DMA between NVMe or network adapters and device memory under supported hardware and software conditions \cite{nvidia_gds_overview,nvidia_gds_best_practices}. Conceptually, this transition separates data movement from host-copy staging; practically, it introduces new constraints around alignment, registration, page pinning, and filesystem compatibility.
+
+\subsection{Interconnect and protocol enablers}
+
+Three enablers are foundational. PCIe evolution increases lane throughput and reduces serialization pressure \cite{pcie_spec}. NVMe exposes deep submission/completion queue models that map well to high-concurrency accelerator pipelines \cite{nvme_spec}. RDMA-capable fabrics enable remote access with kernel-bypass communication and reduced host intervention \cite{infiniband_spec}. Together, they make GPU-resident buffers first-class I/O endpoints rather than terminal copy destinations.
+
+\subsection{Software stack shifts}
+
+The software stack is shifting from monolithic, CPU-led kernels toward split control/data planes: CPUs retain policy and metadata responsibilities, while data transfers and flow control increasingly execute close to the GPU execution context \cite{silberstein2013gpufs,bam2024}. This split motivates a more explicit architectural taxonomy than legacy ``in-core vs out-of-core'' distinctions.
