@@ -1,0 +1,36 @@
+\documentclass[pdflatex,sn-mathphys-num]{sn-jnl}
+
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,shapes.geometric}
+\usepackage{url}
+
+\raggedbottom
+
+\begin{document}
+
+\title[From CPU-Orchestrated to GPU-Driven Storage]{From CPU-Orchestrated to GPU-Driven Storage: A Survey of GPU-Integrated I/O Architectures}
+
+\author*[1]{\fnm{Anonymous} \sur{Author}}
+\affil*[1]{\orgname{Anonymous Institution}, \orgaddress{\city{Anonymous}, \country{Anonymous}}}
+
+\abstract{GPU applications have progressed from compute-bound kernels to end-to-end data pipelines in which storage and communication increasingly dominate wall-clock time. This survey analyzes the architectural transition from CPU-orchestrated I/O paths to GPU-driven storage stacks. We organize prior work and production frameworks into a system taxonomy spanning control plane ownership, data plane placement, transport realization, and consistency model. We then synthesize cross-layer insights on bottleneck migration, metadata critical paths, queue-pair scaling, and memory registration overheads. Finally, we identify open research directions, including multi-tenant isolation, composable memory--storage fabrics, and verifiable performance portability across heterogeneous interconnects.}
+
+\keywords{GPU storage, GPUDirect Storage, I/O architecture, systems survey, heterogeneous systems}
+
+\maketitle
+
+\input{sections/introduction}
+\input{sections/background}
+\input{sections/taxonomy}
+\input{sections/systems}
+\input{sections/insights}
+\input{sections/challenges}
+\input{sections/conclusion}
+
+\bibliography{references}
+
+\end{document}
