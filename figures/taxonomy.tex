@@ -1,0 +1,34 @@
+\begin{tikzpicture}[
+  font=\small,
+  axis/.style={->, thick},
+  box/.style={draw, rectangle, rounded corners, align=center, minimum width=26mm, minimum height=8mm}
+]
+% axes
+\draw[axis] (0,0) -- (9.2,0) node[right] {\textbf{Control Plane} (CPU-controlled $\rightarrow$ GPU-driven)};
+\draw[axis] (0,0) -- (0,5.4) node[above] {\textbf{Data Path} (CPU-mediated $\rightarrow$ remote direct)};
+\draw[axis] (0,0) -- (-2.6,-2.6) node[below left] {\textbf{Deployment} (local $\rightarrow$ disaggregated)};
+
+% guide ticks x
+\foreach \x/\lab in {1.8/CPU-controlled,4.7/CPU-assisted,7.9/GPU-driven} {
+  \draw (\x,0.08) -- (\x,-0.08);
+  \node[below] at (\x,-0.08) {\scriptsize \lab};
+}
+% guide ticks y
+\foreach \y/\lab in {1.5/CPU-mediated,3.0/direct,4.6/remote direct} {
+  \draw (0.08,\y) -- (-0.08,\y);
+  \node[left] at (-0.08,\y) {\scriptsize \lab};
+}
+% guide ticks z visual
+\node[below left] at (-0.9,-0.9) {\scriptsize local};
+\node[below left] at (-1.8,-1.8) {\scriptsize distributed};
+\node[below left] at (-2.6,-2.6) {\scriptsize disaggregated};
+
+% exemplar regions
+\node[box] at (2.0,1.4) {GPUfs-era\host-managed\integration};
+\node[box] at (4.8,3.0) {GDS/RDMA\direct paths\with host policy};
+\node[box] at (7.6,4.4) {Emerging\GPU-driven\remote I/O};
+
+% connectors
+\draw[dashed] (2.0,1.8) -- (4.8,3.4) -- (7.6,4.8);
+
+\end{tikzpicture}
