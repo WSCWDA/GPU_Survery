@@ -1,26 +1,122 @@
-\section{A Taxonomy of GPU-Integrated I/O Architectures}
+\section{Taxonomy of GPU-Integrated I/O Architectures}\label{sec:taxonomy-anchor}
 
-We classify designs along four orthogonal axes.
+\subsection{Motivation and design principles of the taxonomy}
 
-\subsection{Axis I: Control-plane ownership}
+Literature from storage systems, accelerator runtimes, and AI infrastructure consistently forms three observable clusters: (i) CPU-centric orchestration with host-mediated paths, (ii) hybrid architectures that retain host policy while introducing direct GPU-visible transfers, and (iii) emerging designs where GPUs participate in I/O decision loops. These clusters appear repeatedly across GPUfs-style systems, GPUDirect mechanisms, disaggregated storage studies, and AI-serving stacks, indicating that classification by one dimension (e.g., only data movement) is insufficient \cite{silberstein2013gpufs,shahar2016gpufs,nvidia_gds_blog,nvidia_gdrdma,qureshi2023bam,geminifs2025,liu2017rackscale,kwon2023vllm,zhong2024distserve}.
 
-\textbf{CPU-orchestrated designs} retain host control over submission, completion handling, and queue scheduling. \textbf{Hybrid designs} preserve host policy but expose direct GPU-resident data paths. \textbf{GPU-driven designs} push portions of request generation and scheduling onto device-side execution contexts \cite{silberstein2013gpufs,bam2024}.
+Prior surveys usually slice the space by transport efficiency (data-movement surveys), by storage infrastructure domain (HPC storage surveys), or by AI pipeline behavior (ML/LLM systems surveys). Those views are valuable but incomplete for the present problem because they do not jointly explain control authority migration, end-to-end copy paths, and deployment topology evolution in one framework \cite{traub2023compstoragesurvey,zhang2025hpcstoragesurvey,murray2021tfdata}. Therefore, our taxonomy is designed around three complementary dimensions that arise directly from system design decisions: who controls I/O, how bytes move, and where storage is deployed.
 
-\subsection{Axis II: Data-plane placement}
+\subsection{Formal taxonomy definition}
 
-Data transfer can be staged through host DRAM or placed on direct DMA paths to GPU memory. Direct placement reduces redundant copies but can expose fine-grain access inefficiencies when request sizes are too small or alignment is poor \cite{nvidia_gds_best_practices}.
+We define a GPU-integrated storage architecture as:
+\begin{equation}
+\mathcal{A} = \{\mathcal{C},\mathcal{D},\mathcal{M}\},
+\end{equation}
+where $\mathcal{C}$ is the \textbf{control plane}, $\mathcal{D}$ is the \textbf{data path}, and $\mathcal{M}$ is the \textbf{deployment model}.
 
-\subsection{Axis III: Transport realization}
+\textbf{Control Plane ($\mathcal{C}$).} This dimension captures where I/O decisions are made (submission, scheduling, completion handling, metadata coordination). It is necessary because throughput gains from direct DMA can be nullified when control remains host-bottlenecked \cite{linux_io_uring,spdk_overview,qureshi2023bam}.
 
-Transport options include local PCIe-attached NVMe, RDMA-backed remote block paths, and composable disaggregated fabrics. The transport choice interacts with queue depth, completion latency variance, and backpressure behavior \cite{nvme_spec,infiniband_spec,cxl_spec}.
+\textbf{Data Path ($\mathcal{D}$).} This dimension captures byte-flow realization (CPU-mediated copies, local direct DMA, remote direct DMA). It is necessary because copy count and path length dominate latency/bandwidth efficiency \cite{nvidia_gds_overview,nvidia_gdrdma,nvme_spec,infiniband_spec}.
 
-\subsection{Axis IV: Consistency and metadata semantics}
+\textbf{Deployment Model ($\mathcal{M}$).} This dimension captures storage placement (local, distributed, disaggregated) and resulting sharing/isolation behavior. It is necessary because the same direct path has different tail-latency and contention behavior under local NVMe versus remote pooled SSDs \cite{nvmeof_spec,liu2017rackscale,zhang2025hpcstoragesurvey}.
 
-Architectures diverge in metadata handling: host-side POSIX mediation, user-space poll-mode stacks, and GPU-visible metadata caches. The critical path often depends more on metadata round-trips than on raw bandwidth, especially for small object workloads \cite{spdk_overview,geminifs2025}.
+These dimensions are largely orthogonal: control authority can vary independently of data-copy mechanics, and both can vary independently of physical deployment. Overlaps still exist (e.g., NVMe-oF simultaneously affects data-path realization and deployment), and we resolve them by assigning each mechanism to its \emph{primary} architectural effect while recording secondary interactions in cross-dimensional analysis \cite{nvmeof_spec,nvidia_gdrdma}.
+
+\subsection{Control plane evolution}
+
+\paragraph{CPU-controlled.}
+\textbf{Definition:} Host software performs submission, ordering, and completion orchestration; GPUs are compute endpoints. \textbf{Characteristics:} mature POSIX/host stack compatibility, strong tooling, but high host interrupt/synchronization pressure. \textbf{Advantages:} portability and operational stability. \textbf{Limitations:} control bottlenecks and poor scaling for fine-grained GPU-intensive workloads. Representative systems include conventional host I/O frameworks and early GPU data pipelines \cite{linux_io_uring,spdk_overview,murray2021tfdata}.
+
+\paragraph{CPU-assisted.}
+\textbf{Definition:} Hosts keep global policy and metadata authority, while data transfer uses direct paths to GPU memory. \textbf{Characteristics:} reduced copy overhead with partial host dependence. \textbf{Advantages:} practical deployment and immediate bandwidth benefits. \textbf{Limitations:} host-side orchestration remains on critical path for many operations. Representative examples include GPUDirect Storage, GPUDirect RDMA integrations, and HDF5-based GPU-direct pipelines \cite{nvidia_gds_blog,nvidia_gds_overview,nvidia_gdrdma,hdf5gds2020}.
+
+\paragraph{GPU-driven (emerging).}
+\textbf{Definition:} GPUs participate in request generation and/or scheduling decisions, with host layers acting as protection/coordination backstops. \textbf{Characteristics:} accelerator-proximate control, improved overlap for data-intensive kernels. \textbf{Advantages:} reduced host control amplification and better fine-grain responsiveness. \textbf{Limitations:} immature programming models, metadata coherence complexity, and isolation challenges in shared deployments. Representative directions include BaM, GPUfs-derived design ideas, and recent GPU-centric filesystem proposals \cite{qureshi2023bam,silberstein2013gpufs,geminifs2025}.
+
+The authority shift from CPU to GPU occurs because accelerator concurrency has outpaced host control scalability; however, full migration is constrained by protection domains, metadata serialization, and multi-tenant isolation requirements \cite{qureshi2023bam,zhang2025hpcstoragesurvey,liu2017rackscale}.
+
+\subsection{Data path evolution}
+
+\paragraph{CPU-mediated path.}
+\textbf{Flow:} storage $\rightarrow$ host memory $\rightarrow$ GPU memory. \textbf{Copy count:} typically at least two explicit data placements. \textbf{Implication:} robust compatibility but extra bandwidth consumption and software overhead. Representative contexts include conventional host-managed ML pipelines and POSIX-first stacks \cite{murray2021tfdata,linux_io_uring}.
+
+\paragraph{Direct path.}
+\textbf{Flow:} storage/NIC DMA directly to GPU memory under host coordination. \textbf{Copy count:} reduced host-staging copies versus CPU-mediated paths. \textbf{Implication:} improved transfer efficiency and lower host overhead; residual limits come from control and metadata services. Representative mechanisms include GPUDirect Storage and GPUDirect RDMA \cite{nvidia_gds_blog,nvidia_gds_overview,nvidia_gdrdma}.
+
+\paragraph{Remote direct path.}
+\textbf{Flow:} remote NVMe/pooled storage over fabric (e.g., NVMe-oF + RDMA) into GPU-visible buffers. \textbf{Copy count:} avoids local host staging but introduces network/fabric traversal costs. \textbf{Implication:} high elasticity and pooling, with added latency variance and congestion sensitivity. Representative foundations include NVMe-oF deployments and rack-scale disaggregation studies \cite{nvmeof_spec,infiniband_spec,liu2017rackscale}.
+
+\subsection{Deployment model}
+
+\paragraph{Local storage.}
+Storage is physically co-located with accelerators (e.g., node-local NVMe). This model offers strong locality and predictable latency, but capacity and sharing flexibility are limited by node boundaries \cite{nvme_spec,nvidia_gds_overview}.
+
+\paragraph{Distributed storage.}
+Storage is distributed across nodes with shared namespace/service logic. It improves aggregate capacity and throughput but introduces distributed control overhead and variable tail latency under multi-tenant pressure \cite{zhang2025hpcstoragesurvey,murray2021tfdata}.
+
+\paragraph{Disaggregated storage.}
+Storage pools are decoupled from compute and accessed over high-speed fabrics. This model improves utilization and elastic sharing, but isolation, noisy-neighbor effects, and scheduler co-design become central architectural concerns \cite{liu2017rackscale,nvmeof_spec,infiniband_spec}.
+
+\subsection{Cross-dimensional analysis}
+
+\textbf{Control plane vs. data path.} GPU-driven control does not deliver full benefit when data remains CPU-mediated; conversely, direct DMA still suffers when host-side metadata and completion logic serialize request progress \cite{silberstein2013gpufs,nvidia_gds_best_practices,qureshi2023bam}.
+
+\textbf{Data path vs. deployment.} Local direct paths maximize predictable throughput, whereas remote direct paths trade locality for elasticity and pooling. Thus, deployment choices determine whether direct path gains are realized or masked by network contention and tail latency \cite{nvmeof_spec,liu2017rackscale,nvidia_gdrdma}.
+
+\textbf{Control plane vs. deployment.} GPU-driven control is hardest in disaggregated environments because protection, fairness, and failure handling span multiple administrative and hardware domains \cite{zhang2025hpcstoragesurvey,liu2017rackscale,geminifs2025}.
+
+Across dimensions, three bottlenecks recur: CPU orchestration overhead, data-movement amplification, and weak GPU-side I/O scheduling abstractions \cite{murray2021tfdata,nvidia_gds_overview,qureshi2023bam}.
+
+\subsection{System mapping across taxonomy dimensions}
+
+\begin{table*}[t]
+\caption{System mapping under the proposed taxonomy.}
+\label{tab:taxonomy-mapping}
+\centering
+\small
+\begin{tabular}{@{}p{2.6cm}p{0.9cm}p{2.1cm}p{2.2cm}p{2.0cm}p{5.5cm}@{}}
+\toprule
+System & Year & Control Plane & Data Path & Deployment & Key Idea \\
+\midrule
+GPUfs \cite{silberstein2013gpufs} & 2013 & CPU-assisted & CPU-mediated & Local & GPU-visible file abstraction and kernel-side access semantics. \\
+GPUfs follow-up \cite{shahar2016gpufs} & 2016 & CPU-assisted & CPU-mediated & Local & Data-driven GPU I/O optimization with practical access constraints. \\
+SPDK stack \cite{spdk_overview} & 2026 & CPU-controlled & CPU-mediated & Local/Distributed & User-space poll-mode storage path, host-centric orchestration. \\
+io\_uring stack \cite{linux_io_uring} & 2026 & CPU-controlled & CPU-mediated & Local/Distributed & Asynchronous host I/O interface lowering syscall overhead. \\
+GDS (blog/design) \cite{nvidia_gds_blog} & 2019 & CPU-assisted & Direct & Local & Storage-to-GPU direct path to reduce host bounce buffering. \\
+GDS deployment guide \cite{nvidia_gds_overview} & 2026 & CPU-assisted & Direct & Local/Distributed & Production constraints and path selection for GPU-direct I/O. \\
+GPUDirect RDMA \cite{nvidia_gdrdma} & 2022 & CPU-assisted & Direct/Remote direct & Distributed/Disaggregated & NIC-to-GPU memory direct transfer over RDMA fabrics. \\
+GPU Direct I/O with HDF5 \cite{hdf5gds2020} & 2020 & CPU-assisted & Direct & Local/Distributed & Integrates GPU-direct path into established scientific I/O APIs. \\
+BaM \cite{qureshi2023bam} & 2023 & GPU-driven (emerging) & Direct/Remote direct & Local/Distributed & GPU-initiated demand-driven storage access architecture. \\
+GeminiFS \cite{geminifs2025} & 2025 & CPU-assisted $\rightarrow$ GPU-driven & Direct/Remote direct & Distributed & Companion filesystem designed for GPU-dominated workflows. \\
+tf.data \cite{murray2021tfdata} & 2021 & CPU-controlled & CPU-mediated & Distributed & Data pipeline optimization exposing storage-induced training stalls. \\
+Hoard \cite{hoard2018} & 2018 & CPU-controlled & CPU-mediated & Distributed & Distributed caching to alleviate training input bottlenecks. \\
+ZeRO-Infinity \cite{rajbhandari2021zeroinfinity} & 2021 & CPU-assisted & Direct/CPU-mediated hybrid & Distributed & GPU/CPU/NVMe hierarchy management for extreme-scale training. \\
+Rack-scale disaggregated storage \cite{liu2017rackscale} & 2017 & CPU-controlled & Remote direct candidate & Disaggregated & Pooling architecture and utilization/latency trade-off analysis. \\
+NVMe-oF architecture \cite{nvmeof_spec} & 2021 & CPU-controlled/assisted & Remote direct & Disaggregated & NVMe command model over fabrics for remote SSD pooling. \\
+vLLM \cite{kwon2023vllm} & 2023 & CPU-assisted & CPU-mediated/direct hybrid & Distributed & LLM serving stack exposing memory/I/O pressure in decode-heavy workloads. \\
+DistServe \cite{zhong2024distserve} & 2024 & CPU-assisted & Remote direct candidate & Disaggregated/Distributed & Prefill-decode disaggregation motivating storage-aware serving paths. \\
+\botrule
+\end{tabular}
+\end{table*}
+
+\subsection{Comparison with existing survey perspectives}
+
+Data-movement-centric surveys primarily classify mechanisms by transfer path and copy elimination, whereas AI/LLM infrastructure surveys emphasize serving throughput and memory management. Our taxonomy instead classifies systems by architectural evolution dimensions (control, path, deployment), enabling direct reasoning about why some ``fast transfer'' designs still underperform end-to-end under control or deployment constraints \cite{traub2023compstoragesurvey,murray2021tfdata,kwon2023vllm}.
+
+Similarly, HPC storage surveys provide broad infrastructure coverage but usually stop short of modeling GPU authority in I/O orchestration. Our framework contributes that missing perspective and explicitly links transport choices to control-plane migration and workload semantics \cite{zhang2025hpcstoragesurvey,qureshi2023bam,geminifs2025}.
+
+\subsection{Key insights from taxonomy-based synthesis}
+
+\begin{enumerate}
+    \item \textbf{Control migration is the dominant long-term trend.} Across generations, performance bottlenecks increasingly shift from pure bandwidth scarcity to host-side orchestration overhead, motivating GPU-participatory control \cite{silberstein2013gpufs,qureshi2023bam,nvidia_gds_overview}.
+    \item \textbf{Direct paths are necessary but not sufficient.} Copy elimination improves throughput, yet end-to-end gains are bounded when metadata and scheduling remain host-serialized \cite{nvidia_gds_best_practices,nvidia_gdrdma,murray2021tfdata}.
+    \item \textbf{Deployment evolution changes optimization priorities.} As systems move from local NVMe to disaggregated pools, latency variance, fairness, and isolation become first-class constraints \cite{nvmeof_spec,liu2017rackscale,zhang2025hpcstoragesurvey}.
+    \item \textbf{AI/LLM workloads force storage--runtime co-design.} Training and serving stacks expose bursty, phase-coupled I/O behavior that cannot be addressed by transport tuning alone \cite{rajbhandari2021zeroinfinity,kwon2023vllm,zhong2024distserve}.
+\end{enumerate}
 
 \begin{figure}[t]
   \centering
   \input{figures/taxonomy}
-  \caption{Survey taxonomy from CPU-orchestrated to GPU-driven storage architectures.}
-  \label{fig:taxonomy}
+  \caption{Three-dimensional taxonomy of GPU-integrated I/O architectures. The \emph{x}-axis captures control-plane authority (CPU-controlled to GPU-driven), the \emph{y}-axis captures data-path realization (CPU-mediated to remote direct), and the diagonal axis captures deployment evolution (local to disaggregated). Representative systems occupy different regions according to their primary architectural choices, enabling cross-dimensional comparison beyond transfer-path optimization.}
+  \label{fig:taxonomy-3d}
 \end{figure}
