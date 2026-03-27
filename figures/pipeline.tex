@@ -1,0 +1,36 @@
+\begin{tikzpicture}[
+  x=1cm,y=1cm,
+  box/.style={draw, rounded corners, minimum width=1.7cm, minimum height=0.6cm, align=center, font=\scriptsize},
+  data/.style={-{Latex[length=1.8mm]}, thick},
+  ctrl/.style={-{Latex[length=1.5mm]}, dashed, thin}
+]
+
+% top: traditional
+\node[font=\scriptsize, anchor=west] at (-0.2,1.65) {\textbf{Traditional CPU-mediated pipeline}};
+\node[box, fill=gray!10] (tstor) at (0,1.0) {Storage};
+\node[box, fill=gray!25] (tcpu) at (2.2,1.0) {CPU data\\loader};
+\node[box, fill=gray!45] (tgpu) at (4.4,1.0) {GPU};
+\node[box, fill=gray!20] (tloop) at (6.6,1.0) {Training\\loop};
+\draw[data] (tstor.east) -- (tcpu.west);
+\draw[data] (tcpu.east) -- node[above,font=\tiny]{copy/stage} (tgpu.west);
+\draw[data] (tgpu.east) -- (tloop.west);
+\draw[ctrl] (tcpu.north) to[bend left=14] node[above,font=\tiny]{batch scheduling} (tloop.north);
+\node[font=\tiny, align=left, anchor=west] at (8.2,1.0) {CPU on critical path;\\ limited overlap};
+
+% bottom: gpu-driven
+\node[font=\scriptsize, anchor=west] at (-0.2,-0.15) {\textbf{GPU-driven pipeline}};
+\node[box, fill=gray!10] (gstor) at (0,-0.8) {Storage /\\Remote pool};
+\node[box, fill=gray!25] (gcpu) at (2.2,-0.8) {CPU policy\\(metadata)};
+\node[box, fill=gray!45] (ggpu) at (4.4,-0.8) {GPU I/O +\\compute};
+\node[box, fill=gray!20] (gloop) at (6.6,-0.8) {Training /\\Inference loop};
+\draw[data] (gstor.east) -- node[above,font=\tiny]{direct/remote direct} (ggpu.west);
+\draw[data] (ggpu.east) -- (gloop.west);
+\draw[ctrl] (gcpu.east) -- (ggpu.north west);
+\draw[ctrl] (ggpu.north) to[bend left=16] node[above,font=\tiny]{I/O requests} (gstor.south);
+\draw[data] (ggpu.south) to[bend right=20] node[below,font=\tiny]{overlap} (gloop.south);
+\node[font=\tiny, align=left, anchor=west] at (8.2,-0.8) {Higher overlap;\\ reduced CPU mediation};
+
+% separator
+\draw[densely dashed] (-0.6,0.1) -- (9.9,0.1);
+
+\end{tikzpicture}

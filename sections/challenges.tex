@@ -1,0 +1,17 @@
+\section{Open Challenges and Research Directions}
+
+\subsection{Multi-tenant isolation and QoS}
+
+GPU-native I/O paths currently provide limited tenant-level isolation compared with mature CPU-centric storage schedulers. Future work should combine hardware queue partitioning, rate control, and GPU-visible fairness telemetry.
+
+\subsection{Composable memory--storage fabrics}
+
+Emerging coherent interconnects motivate architectures where accelerators, memory pools, and storage targets are jointly scheduled \cite{cxl_spec}. A key research question is how to expose fabric-level heterogeneity to runtime systems without reintroducing CPU bottlenecks.
+
+\subsection{Failure semantics for long-running GPU pipelines}
+
+Checkpoint, replay, and partial write ordering remain under-specified for GPU-driven flows in distributed training and inference services. Formalized recovery contracts and crash-consistent GPU I/O APIs are needed \cite{geminifs2025}.
+
+\subsection{Evaluation methodology}
+
+The community needs standardized benchmarks that jointly vary request granularity, metadata intensity, and overlap structure between kernels and I/O. Reporting only peak bandwidth obscures practical trade-offs in cost, tail latency, and energy.

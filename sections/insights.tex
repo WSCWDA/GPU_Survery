@@ -1,0 +1,17 @@
+\section{System-Level Insights}
+
+\subsection{Bottlenecks migrate, not disappear}
+
+Removing host copy stages shifts pressure to other components: IOMMU mappings, buffer registration caches, completion polling threads, and filesystem metadata services. Therefore, evaluation should report full critical-path decomposition instead of only aggregate bandwidth \cite{nvidia_gds_best_practices,spdk_overview}.
+
+\subsection{Control latency dominates fine-grain I/O}
+
+For small requests, queue management and completion signaling costs outweigh payload transfer time. GPU-driven designs gain most when they fuse request generation with compute context and minimize host wakeups \cite{bam2024,silberstein2013gpufs}.
+
+\subsection{Concurrency must be topology-aware}
+
+Peak throughput requires matching queue placement to PCIe hierarchy, NUMA locality, and NIC/NVMe affinity. Static ``one-size-fits-all'' queue provisioning frequently causes head-of-line blocking or CQ contention in multi-GPU servers \cite{pcie_spec,infiniband_spec}.
+
+\subsection{Semantic gaps limit portability}
+
+A persistent challenge is the mismatch between POSIX-style consistency expectations and accelerator-optimized asynchronous pipelines. Designs that explicitly separate metadata consistency from bulk-data movement provide more portable performance across filesystems and fabrics \cite{geminifs2025,nvme_spec}.

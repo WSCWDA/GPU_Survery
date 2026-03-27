@@ -1,0 +1,37 @@
+\documentclass{sn-jnl}
+
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, shapes, fit}
+
+\begin{document}
+
+\title{From CPU-Orchestrated to GPU-Driven Storage: A Survey of GPU-Integrated I/O Architectures}
+
+\author*[1]{\fnm{First} \sur{Author}}
+\affil[1]{\orgname{Institution Name}, \orgaddress{\city{City}, \country{Country}}}
+
+\abstract{GPU-centric computing in AI and HPC has shifted the performance bottleneck from arithmetic throughput to data orchestration across storage, memory, and interconnects. While direct-path technologies reduce copy overhead, many deployments remain constrained by CPU-centric control planes, metadata serialization, and topology-induced variability. This survey studies the architectural transition from CPU-orchestrated I/O to GPU-integrated and emerging GPU-driven storage systems. We organize the design space with a three-dimensional taxonomy based on control plane, data path, and deployment model, then map representative systems from GPU-aware filesystems to GPUDirect and disaggregated-storage deployments. Building on this taxonomy, we synthesize system design dimensions---data layout, scheduling, memory hierarchy management, and fault tolerance---and analyze how their interactions determine end-to-end behavior in training and serving pipelines. We further identify open research problems in GPU-native I/O control, storage--compute co-design, disaggregated deployment semantics, and unified APIs. The resulting framework provides a principled foundation for evaluating and designing next-generation GPU-integrated storage stacks.}
+
+\keywords{GPU storage, I/O architecture, GPUDirect Storage, NVMe-oF, AI systems}
+
+\maketitle
+
+\input{sections/introduction}
+\input{sections/related_work}
+\input{sections/taxonomy}
+\input{sections/figures}
+\input{sections/design}
+\input{sections/ai_workloads}
+\input{sections/future}
+\input{sections/conclusion}
+
+\bibliography{references}
+
+\end{document}

@@ -1,0 +1,7 @@
+\section{AI Workloads and Storage Implications}
+
+Modern AI pipelines expose storage behaviors that differ from traditional throughput benchmarks: training emphasizes sustained ingest and periodic persistence, whereas serving emphasizes low-latency state access with bursty phase shifts. In both regimes, GPU utilization depends on whether storage and runtime policies are co-designed around compute phases rather than treated as independent subsystems \cite{murray2021tfdata,hoard2018,kwon2023vllm,zhong2024distserve}.
+
+For training, data loading, shuffling, and checkpoint traffic compete for bandwidth and control resources. Systems that optimize only one stage (e.g., ingest throughput) frequently degrade another stage (e.g., checkpoint latency), leading to unstable step time and reduced cluster efficiency \cite{rajbhandari2021zeroinfinity,geminifs2025}. This motivates architecture-level coordination across layout, scheduling, and persistence dimensions introduced in Sections~\ref{sec:taxonomy-anchor} and \ref{sec:design-anchor}.
+
+For inference, long-context and high-concurrency serving amplify memory--storage hierarchy pressure, especially when KV/state footprints exceed device-local capacity. Remote/direct paths can relieve local pressure, but only if control and placement decisions are topology-aware and phase-aware \cite{nvidia_gdrdma,nvmeof_spec,liu2017rackscale}. Figure~\ref{fig:pipeline} summarizes the shift from CPU-mediated pipelines toward GPU-driven overlap-centric execution.

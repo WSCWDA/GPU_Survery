@@ -1,0 +1,60 @@
+\section{Future Directions}
+
+\subsection{GPU-driven I/O control as a first-class systems problem}
+
+\textbf{Problem statement.} Most deployed stacks remain CPU-controlled or CPU-assisted even when data paths are direct, so GPUs still cannot reliably initiate, prioritize, and complete storage operations under a unified runtime policy. This gap arises because current interfaces separate accelerator kernels from storage queue control and metadata coordination \cite{nvidia_gds_overview,nvidia_gdrdma,linux_io_uring}.
+
+\textbf{Why it matters.} As workloads move toward finer-grained and phase-coupled pipelines, control latency increasingly dominates transfer latency; host-side orchestration then becomes the primary bottleneck despite high raw bandwidth \cite{murray2021tfdata,qureshi2023bam}. \textbf{Taxonomy linkage:} control plane + data path.
+
+\textbf{Limitations of existing approaches.} GPUDirect mechanisms reduce copies but do not by themselves provide GPU-native scheduling and fairness control across competing flows \cite{nvidia_gds_blog,nvidia_gds_best_practices}. \textbf{Research opportunities.} Design GPU-visible submission/completion abstractions with explicit protection domains, priority classes, and preemption semantics that remain interoperable with host safety policies.
+
+\subsection{End-to-end storage--compute co-design for training and serving}
+
+\textbf{Problem statement.} Current systems optimize storage and compute subsystems in isolation, while modern AI pipelines require joint optimization of sharding, prefetch depth, batch formation, and kernel scheduling. The mismatch is structural: storage interfaces expose block/object primitives, whereas training/inference runtimes reason in tensor and step semantics \cite{murray2021tfdata,hoard2018,kwon2023vllm}.
+
+\textbf{Why it matters.} Without co-design, systems over-provision one layer (e.g., storage throughput) while under-utilizing end-to-end pipeline overlap, producing unstable throughput and poor cost efficiency \cite{zhong2024distserve,rajbhandari2021zeroinfinity}. \textbf{Taxonomy linkage:} control plane + deployment model.
+
+\textbf{Limitations of existing approaches.} Existing frameworks expose partial pipeline controls but lack cross-layer contracts tying storage readiness to GPU execution windows \cite{murray2021tfdata,geminifs2025}. \textbf{Research opportunities.} Develop step-aware I/O intent APIs, runtime feedback loops, and schedulers that jointly optimize compute launch, data staging, and persistence at cluster scale.
+
+\subsection{Disaggregated storage for GPU workloads beyond transport optimization}
+
+\textbf{Problem statement.} NVMe-oF/RDMA enables storage pooling, but disaggregated deployments introduce tail latency, congestion coupling, and isolation challenges not captured by local-direct path models \cite{nvmeof_spec,infiniband_spec,liu2017rackscale}.
+
+\textbf{Why it matters.} GPU clusters increasingly rely on pooled storage for elasticity and multi-tenancy; uncontrolled variance directly reduces accelerator utilization and service-level predictability \cite{zhang2025hpcstoragesurvey,zhong2024distserve}. \textbf{Taxonomy linkage:} deployment model + data path.
+
+\textbf{Limitations of existing approaches.} Most current work emphasizes fabric throughput and protocol correctness, with limited support for GPU-aware admission control, placement, and noisy-neighbor isolation \cite{nvmeof_spec,liu2017rackscale}. \textbf{Research opportunities.} Build placement/scheduling policies that are topology-aware, tenant-aware, and GPU-phase-aware, plus recovery-aware routing for remote direct paths.
+
+\subsection{Data movement minimization as a layout and runtime co-optimization problem}
+
+\textbf{Problem statement.} Copy amplification persists across CPU memory, pinned staging regions, and GPU memory because layout decisions and runtime scheduling are often made independently. Direct path availability does not guarantee minimal movement when formats and access granularity are mismatched \cite{nvidia_gds_overview,nvidia_gds_best_practices,silberstein2013gpufs}.
+
+\textbf{Why it matters.} Extra copies consume bandwidth, increase synchronization overhead, and reduce overlap opportunities in both training and serving paths \cite{murray2021tfdata,kwon2023vllm}. \textbf{Taxonomy linkage:} data path + control plane.
+
+\textbf{Limitations of existing approaches.} Existing optimizations are often static (offline layout tuning) or local (single-stage copy elimination) and fail under dynamic data skew and workload phase shifts \cite{hoard2018,geminifs2025}. \textbf{Research opportunities.} Co-design adaptive layout transforms, online prefetch granularity control, and access-pattern-guided placement that explicitly optimize end-to-end copy count.
+
+\subsection{Memory--storage hierarchy design for LLM-era systems}
+
+\textbf{Problem statement.} LLM workloads stress hierarchical capacity and bandwidth across GPU memory, host memory, and SSD tiers, especially under large KV caches and long-context serving. Current policies often treat these tiers as loosely coupled fallbacks rather than coordinated resources \cite{kwon2023vllm,zhong2024distserve,rajbhandari2021zeroinfinity}.
+
+\textbf{Why it matters.} Poor tier coordination leads to bursty eviction/offload traffic, unstable latency, and underutilized accelerators in both training checkpoints and inference-time state management \cite{rajbhandari2021zeroinfinity,nvidia_gdrdma}. \textbf{Taxonomy linkage:} data path + deployment model.
+
+\textbf{Limitations of existing approaches.} Existing memory managers optimize either serving-time cache locality or training-time offload, but seldom provide a unified policy with explicit storage-awareness and recovery-awareness \cite{kwon2023vllm,geminifs2025}. \textbf{Research opportunities.} Design unified tier managers that expose predictable QoS envelopes, support state-aware migration, and couple cache policy with persistent layout decisions.
+
+\subsection{Fault tolerance for GPU pipelines with low interruption budgets}
+
+\textbf{Problem statement.} Checkpoint and recovery mechanisms remain expensive because persistence semantics are not co-designed with GPU execution phases and storage topology. Full synchronous checkpoints are simple but create large stall windows; asynchronous alternatives complicate ordering and replay \cite{hdf5gds2020,rajbhandari2021zeroinfinity}.
+
+\textbf{Why it matters.} At cluster scale, checkpoint overhead and recovery delay directly translate into lost accelerator-hours and reduced service availability \cite{zhang2025hpcstoragesurvey,geminifs2025}. \textbf{Taxonomy linkage:} control plane + deployment model.
+
+\textbf{Limitations of existing approaches.} Most systems provide either fast writes without strong replay contracts or strong semantics with high pause cost \cite{hdf5gds2020,rajbhandari2021zeroinfinity}. \textbf{Research opportunities.} Develop phase-aware incremental persistence, topology-aware redundancy placement, and verification-friendly replay protocols for GPU-driven execution graphs.
+
+\subsection{Programming model and API gap for GPU-integrated storage}
+
+\textbf{Problem statement.} There is no widely adopted programming model that unifies data placement intent, I/O scheduling intent, and consistency intent across CPU-mediated, direct, and remote-direct modes. Developers therefore compose ad hoc APIs, which reduces portability and obscures optimization opportunities \cite{silberstein2013gpufs,nvidia_gds_overview,spdk_overview}.
+
+\textbf{Why it matters.} Without stable abstractions, system advances are difficult to transfer across frameworks, filesystems, and fabrics, slowing ecosystem-level progress \cite{traub2023compstoragesurvey,zhang2025hpcstoragesurvey}. \textbf{Taxonomy linkage:} all three dimensions.
+
+\textbf{Limitations of existing approaches.} Current interfaces are fragmented by layer (runtime, filesystem, transport), with inconsistent semantics for ordering, completion, and failure handling \cite{nvidia_gdrdma,nvmeof_spec}. \textbf{Research opportunities.} Define an intent-based API stack with explicit contracts for control authority, copy semantics, and recovery behavior, plus portable conformance tests.
+
+\paragraph{Cross-cutting synthesis.}
+Across these problems, common root causes are clear: CPU-centric control persists even when data paths modernize; data movement is optimized locally rather than end-to-end; and GPU-native abstractions remain immature. Future progress therefore depends on co-designing control, data path, and deployment policies as one system, rather than treating transport acceleration as a complete solution \cite{qureshi2023bam,nvidia_gds_overview,geminifs2025,murray2021tfdata}.

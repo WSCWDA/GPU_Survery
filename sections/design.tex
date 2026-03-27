@@ -1,0 +1,38 @@
+\section{System Design Dimensions}\label{sec:design-anchor}
+
+This section translates the taxonomy in Section~\ref{sec:taxonomy-anchor} into an actionable design space. We focus on four dimensions that repeatedly determine end-to-end performance in GPU-integrated storage systems: data layout, I/O scheduling, memory management, and fault tolerance. In each dimension, the right choice depends on the same architectural tuple $\{\text{control plane, data path, deployment}\}$ used in our taxonomy \cite{silberstein2013gpufs,nvidia_gds_overview,qureshi2023bam,geminifs2025}.
+
+\subsection{Data Layout}
+
+\textbf{Design problem.} Data layout determines whether GPU-side access is predominantly sequential, strided, or random, and therefore whether a system can exploit direct-path bandwidth or remains bounded by small-request control overheads. In practice, layout decisions span sample sharding, tensor serialization, and checkpoint object granularity, and they interact strongly with deployment (local versus distributed/disaggregated storage) \cite{murray2021tfdata,hoard2018,zhang2025hpcstoragesurvey}.
+
+\textbf{Alternative approaches.} Sequential shard-oriented layouts reduce seek and metadata pressure, favoring CPU-mediated and direct paths in throughput-oriented training phases. Fine-grained sample-level or object-level layouts improve flexibility for skewed sampling and elastic serving, but they amplify metadata and scheduling costs, especially in remote direct paths over NVMe-oF/RDMA \cite{nvmeof_spec,infiniband_spec,liu2017rackscale}. Checkpoint layouts follow a similar pattern: monolithic snapshots simplify recovery semantics, while partitioned/incremental representations improve write parallelism and overlap opportunities with GPU compute \cite{rajbhandari2021zeroinfinity,geminifs2025}.
+
+\textbf{Trade-offs.} Layout design is a three-way trade-off among (i) sequential efficiency, (ii) runtime flexibility, and (iii) preprocessing burden. Preprocessing-heavy layouts can substantially improve steady-state GPU feed rate, but reduce agility under dynamic workloads. Conversely, highly flexible layouts increase random access and control-plane amplification, which is particularly costly when control remains CPU-dominant \cite{murray2021tfdata,qureshi2023bam}.
+
+\subsection{I/O Scheduling}
+
+\textbf{Design problem.} I/O scheduling decides when and where requests are issued, how queue depth is controlled, and how transfers are overlapped with compute. This is fundamentally a control-plane question: host-driven schedulers are mature and predictable, while GPU-aware scheduling can reduce reaction latency for fine-grained pipelines but requires tighter runtime integration \cite{linux_io_uring,spdk_overview,silberstein2013gpufs}.
+
+\textbf{Alternative approaches.} CPU-driven prefetch pipelines (e.g., host data-loader centric) remain common because they preserve software compatibility and centralized policy control. Hybrid approaches couple host policy with direct paths (GDS/RDMA), using asynchronous submission to increase overlap while retaining host metadata authority \cite{nvidia_gds_blog,nvidia_gds_overview,nvidia_gdrdma}. Emerging GPU-participatory designs push request generation and demand signaling closer to kernels, reducing control lag but increasing complexity in fairness and coordination \cite{qureshi2023bam,geminifs2025}.
+
+\textbf{Trade-offs.} Throughput-oriented scheduling favors deep queues and aggressive prefetching; latency-sensitive phases favor tighter pacing and smaller in-flight windows. The practical frontier is scheduling complexity versus benefit: richer dependency-aware schedules can improve overlap but also increase synchronization overhead across CPU/GPU domains. Where data paths are remote-direct, queue misconfiguration can quickly convert bandwidth headroom into tail-latency instability \cite{nvmeof_spec,infiniband_spec,liu2017rackscale}.
+
+\subsection{Memory Management}
+
+\textbf{Design problem.} Memory policy determines whether I/O improvements translate into application speedups. Pinned host buffers, registration caches, GPU-resident caching, and multi-tier placement (GPU/CPU/SSD) jointly define copy count, hit rate, and eviction behavior. This dimension couples directly to data-path realization and to control responsibility for placement decisions \cite{nvidia_gds_best_practices,nvidia_gdrdma,rajbhandari2021zeroinfinity}.
+
+\textbf{Alternative approaches.} CPU-mediated stacks often rely on host staging buffers and explicit host-to-device copies; direct-path systems reduce staging but still need careful pinning/registration management. GPU-side caches (including serving-time KV caches) reduce repeated storage accesses but shift pressure to device memory management and eviction policy \cite{nvidia_gds_overview,kwon2023vllm,zhong2024distserve}. Hierarchical memory/offload schemes extend effective capacity by moving states across GPU, CPU, and SSD tiers, improving scale at the cost of added placement and consistency complexity \cite{rajbhandari2021zeroinfinity,geminifs2025}.
+
+\textbf{Trade-offs.} Larger caches and pinned regions improve throughput and overlap but reduce usable memory for compute and can increase fragmentation. Aggressive offload lowers device pressure but can introduce bursty transfers and control jitter. The central trade-off is memory efficiency versus performance predictability under mixed training/serving workloads \cite{kwon2023vllm,nvidia_gds_best_practices,murray2021tfdata}.
+
+\subsection{Fault Tolerance}
+
+\textbf{Design problem.} Fault tolerance must preserve correctness without collapsing the compute--I/O overlap benefits of GPU-centric pipelines. Checkpointing frequency, checkpoint granularity, and recovery protocol all feed back into control-plane load, data-path occupancy, and deployment-level storage contention \cite{rajbhandari2021zeroinfinity,zhang2025hpcstoragesurvey}.
+
+\textbf{Alternative approaches.} Full synchronous checkpoints simplify consistency and recovery logic but create large pause windows and peak bandwidth bursts. Incremental or asynchronous persistence reduces stall time and can overlap with GPU compute, but requires metadata tracking and stronger ordering discipline across tiers and nodes \cite{hdf5gds2020,geminifs2025}. In disaggregated deployments, recovery design additionally depends on fabric behavior and tenant isolation policy, not only on local write throughput \cite{nvmeof_spec,liu2017rackscale,infiniband_spec}.
+
+\textbf{Trade-offs.} Lower recovery-point objectives usually imply higher checkpoint traffic and storage cost. Relaxing synchronization improves runtime performance but complicates replay semantics and increases recovery-time uncertainty. Systems therefore face explicit consistency-versus-performance decisions that should be aligned with control authority placement and deployment model \cite{rajbhandari2021zeroinfinity,hdf5gds2020,geminifs2025}.
+
+\paragraph{Cross-cutting synthesis.}
+These four dimensions are tightly coupled: layout choices shape scheduling granularity; scheduling policy determines memory pressure; memory policy constrains feasible checkpoint strategies; and fault-tolerance mechanisms feed back into both control and data-path occupancy. Across systems, the same bottlenecks recur---CPU orchestration overhead, data-movement amplification, and limited GPU-native I/O control---indicating that local optimizations are insufficient without end-to-end co-design across control plane, data path, and deployment model \cite{qureshi2023bam,nvidia_gds_overview,murray2021tfdata,geminifs2025}.
