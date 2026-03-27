@@ -1,0 +1,23 @@
+\begin{tikzpicture}[
+  node distance=7mm and 10mm,
+  box/.style={rectangle, draw, rounded corners, align=center, minimum width=3.1cm, minimum height=8mm},
+  arr/.style={-{Latex[length=2.4mm]}, thick}
+]
+
+\node[box] (a1) {CPU-Orchestrated\\(Host-submitted, staged copies)};
+\node[box, right=of a1] (a2) {CPU-Controlled + GPU-Direct Data\\(Host policy, direct DMA)};
+\node[box, right=of a2] (a3) {GPU-Driven\\(GPU-initiated scheduling and flow control)};
+
+\node[box, below=of a1] (b1) {Local NVMe};
+\node[box, below=of a2] (b2) {Networked Block/Object};
+\node[box, below=of a3] (b3) {Disaggregated Memory-Storage Fabric};
+
+\draw[arr] (a1) -- (a2);
+\draw[arr] (a2) -- (a3);
+\draw[arr] (a1) -- (b1);
+\draw[arr] (a2) -- (b2);
+\draw[arr] (a3) -- (b3);
+
+\node[align=center, below=11mm of b2] (cap) {\textbf{Axes:} control-plane owner, data-path placement, transport realization, and consistency semantics};
+
+\end{tikzpicture}
