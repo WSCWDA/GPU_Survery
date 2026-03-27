@@ -1,6 +1,6 @@
-\section{System Design Dimensions}
+\section{System Design Dimensions}\label{sec:design-anchor}
 
-This section translates the taxonomy in Section~\ref{sec:taxonomy-anchor} into an actionable design space. We focus on four dimensions that repeatedly determine end-to-end performance in GPU-integrated storage systems: data layout, I/O scheduling, memory management, and fault tolerance. In each dimension, the right choice depends on the same architectural tuple $\{\text{control plane, data path, deployment}\}$ used in our taxonomy \cite{silberstein2013gpufs,nvidia_gds_overview,qureshi2023bam,geminifs2025}.
+This section translates the taxonomy in Section~\ref{sec:taxonomy-anchor} into an actionable design space. It focuses on architectural decisions that determine whether GPU-integrated systems actually realize the promised gains of direct and GPU-participatory I/O. We focus on four dimensions that repeatedly determine end-to-end performance in GPU-integrated storage systems: data layout, I/O scheduling, memory management, and fault tolerance. In each dimension, the right choice depends on the same architectural tuple $\{\text{control plane, data path, deployment}\}$ used in our taxonomy \cite{silberstein2013gpufs,nvidia_gds_overview,qureshi2023bam,geminifs2025}.
 
 \subsection{Data Layout}
 

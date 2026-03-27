@@ -1,39 +1,43 @@
-\documentclass[pdflatex,sn-mathphys-num]{sn-jnl}
+\documentclass{sn-jnl}
 
 \usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
 \usepackage{booktabs}
 \usepackage{multirow}
-\usepackage{amsmath,amssymb}
-\usepackage{tikz}
-\usetikzlibrary{positioning,arrows.meta,shapes.geometric}
 \usepackage{url}
-
-\raggedbottom
+\usepackage{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, shapes, fit}
 
 \begin{document}
 
-\title[From CPU-Orchestrated to GPU-Driven Storage]{From CPU-Orchestrated to GPU-Driven Storage: A Survey of GPU-Integrated I/O Architectures}
+\title{From CPU-Orchestrated to GPU-Driven Storage: A Survey of GPU-Integrated I/O Architectures}
 
-\author*[1]{\fnm{Anonymous} \sur{Author}}
-\affil*[1]{\orgname{Anonymous Institution}, \orgaddress{\city{Anonymous}, \country{Anonymous}}}
+\author*[1]{\fnm{First} \sur{Author}}
+\affil[1]{\orgname{Institution Name}, \orgaddress{\city{City}, \country{Country}}}
 
-\abstract{GPU applications have progressed from compute-bound kernels to end-to-end data pipelines in which storage and communication increasingly dominate wall-clock time. This survey analyzes the architectural transition from CPU-orchestrated I/O paths to GPU-driven storage stacks. We organize prior work and production frameworks into a system taxonomy spanning control plane ownership, data plane placement, transport realization, and consistency model. We then synthesize cross-layer insights on bottleneck migration, metadata critical paths, queue-pair scaling, and memory registration overheads. Finally, we identify open research directions, including multi-tenant isolation, composable memory--storage fabrics, and verifiable performance portability across heterogeneous interconnects.}
+\abstract{While GPUs have become the dominant compute engines for modern data-intensive applications, including large-scale AI training and inference, a systematic understanding of their interaction with storage systems remains largely unexplored. This survey aims to bridge this gap by addressing the following key questions: (1) How have storage systems evolved to support GPU-centric workloads? (2) To what extent do existing architectures overcome the limitations of CPU-orchestrated I/O paths? (3) What are the emerging directions toward fully GPU-driven storage systems?
 
-\keywords{GPU storage, GPUDirect Storage, I/O architecture, systems survey, heterogeneous systems}
+To answer these questions, we present a comprehensive survey of GPU-integrated I/O architectures. Specifically, we first characterize the architectural evolution from CPU-orchestrated to GPU-driven storage, and introduce a unified taxonomy spanning control plane ownership, data path realization, and deployment models, providing a structured lens to understand existing systems and frameworks.
+
+Furthermore, we analyze key system design dimensions, including data movement, I/O scheduling, memory management, and fault tolerance, and distill cross-layer insights on bottleneck migration, metadata critical paths, queue-pair scalability, and memory registration overheads. Finally, we highlight emerging challenges and future directions, such as GPU-native I/O control, disaggregated storage for AI workloads, and composable memory--storage fabrics.
+
+We hope this survey provides a principled understanding of the design space of GPU-integrated storage systems, offering both insights into their capabilities and limitations, and practical guidance for building next-generation GPU-driven data infrastructures.}
+
+\keywords{GPU storage, I/O architecture, GPUDirect Storage, NVMe-oF, AI systems}
 
 \maketitle
 
 \input{sections/introduction}
-\input{sections/background}
+\input{sections/related_work}
 \input{sections/taxonomy}
 \input{sections/figures}
-\input{sections/systems}
 \input{sections/design}
-\input{sections/insights}
-\input{sections/challenges}
-\input{sections/related_work}
+\input{sections/ai_workloads}
+\input{sections/future}
 \input{sections/conclusion}
 
-\bibliography{references}
+\bibliography{ref}
 
 \end{document}
