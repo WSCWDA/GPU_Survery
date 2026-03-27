@@ -1,0 +1,26 @@
+\section{A Taxonomy of GPU-Integrated I/O Architectures}
+
+We classify designs along four orthogonal axes.
+
+\subsection{Axis I: Control-plane ownership}
+
+\textbf{CPU-orchestrated designs} retain host control over submission, completion handling, and queue scheduling. \textbf{Hybrid designs} preserve host policy but expose direct GPU-resident data paths. \textbf{GPU-driven designs} push portions of request generation and scheduling onto device-side execution contexts \cite{silberstein2013gpufs,bam2024}.
+
+\subsection{Axis II: Data-plane placement}
+
+Data transfer can be staged through host DRAM or placed on direct DMA paths to GPU memory. Direct placement reduces redundant copies but can expose fine-grain access inefficiencies when request sizes are too small or alignment is poor \cite{nvidia_gds_best_practices}.
+
+\subsection{Axis III: Transport realization}
+
+Transport options include local PCIe-attached NVMe, RDMA-backed remote block paths, and composable disaggregated fabrics. The transport choice interacts with queue depth, completion latency variance, and backpressure behavior \cite{nvme_spec,infiniband_spec,cxl_spec}.
+
+\subsection{Axis IV: Consistency and metadata semantics}
+
+Architectures diverge in metadata handling: host-side POSIX mediation, user-space poll-mode stacks, and GPU-visible metadata caches. The critical path often depends more on metadata round-trips than on raw bandwidth, especially for small object workloads \cite{spdk_overview,geminifs2025}.
+
+\begin{figure}[t]
+  \centering
+  \input{figures/taxonomy}
+  \caption{Survey taxonomy from CPU-orchestrated to GPU-driven storage architectures.}
+  \label{fig:taxonomy}
+\end{figure}
