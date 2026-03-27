@@ -1,0 +1,62 @@
+\begin{tikzpicture}[
+  x=1cm,y=1cm,
+  box/.style={draw, rounded corners, minimum width=1.3cm, minimum height=0.55cm, align=center, font=\scriptsize},
+  stage/.style={draw, rounded corners, minimum width=3.9cm, minimum height=2.4cm},
+  data/.style={-{Latex[length=1.8mm]}, thick},
+  ctrl/.style={-{Latex[length=1.4mm]}, dashed, thin}
+]
+
+% stage frames
+\node[stage] (s1) at (0,0) {};
+\node[stage] (s2) at (4.2,0) {};
+\node[stage] (s3) at (8.4,0) {};
+\node[stage] (s4) at (12.6,0) {};
+
+\node[font=\scriptsize, above=1.12cm] at (s1.north) {\textbf{CPU-mediated I/O}};
+\node[font=\scriptsize, above=1.12cm] at (s2.north) {\textbf{Bypass I/O}};
+\node[font=\scriptsize, above=1.12cm] at (s3.north) {\textbf{Direct GPU I/O}};
+\node[font=\scriptsize, above=1.12cm] at (s4.north) {\textbf{GPU-driven storage}};
+
+% components
+\node[box, fill=gray!10] (st1) at (-1.2,0.55) {Storage};
+\node[box, fill=gray!25] (cpu1) at (0,0.0) {CPU};
+\node[box, fill=gray!45] (gpu1) at (1.2,-0.55) {GPU};
+
+\node[box, fill=gray!10] (st2) at (3.0,0.55) {Storage};
+\node[box, fill=gray!25] (cpu2) at (4.2,0.0) {CPU};
+\node[box, fill=gray!45] (gpu2) at (5.4,-0.55) {GPU};
+
+\node[box, fill=gray!10] (st3) at (7.2,0.55) {Storage};
+\node[box, fill=gray!25] (cpu3) at (8.4,0.0) {CPU};
+\node[box, fill=gray!45] (gpu3) at (9.6,-0.55) {GPU};
+
+\node[box, fill=gray!10] (st4) at (11.4,0.55) {Storage};
+\node[box, fill=gray!25] (cpu4) at (12.6,0.0) {CPU};
+\node[box, fill=gray!45] (gpu4) at (13.8,-0.55) {GPU};
+
+% stage 1
+\draw[data] (st1.east) -- (cpu1.west);
+\draw[data] (cpu1.east) -- (gpu1.west);
+\draw[ctrl] (cpu1.south) -- (gpu1.north);
+
+% stage 2
+\draw[data] (st2.east) -- (gpu2.west);
+\draw[ctrl] (cpu2.west) -- (st2.south east);
+\draw[ctrl] (cpu2.east) -- (gpu2.north);
+
+% stage 3
+\draw[data] (st3.east) -- (gpu3.west);
+\draw[ctrl] (cpu3.east) -- (gpu3.north);
+\draw[ctrl] (cpu3.west) -- (st3.south east);
+\node[font=\tiny, align=center] at (8.4,-1.15) {host policy,\\ direct data path};
+
+% stage 4
+\draw[data] (st4.east) -- (gpu4.west);
+\draw[ctrl] (gpu4.north) to[bend left=18] (st4.south);
+\draw[ctrl] (cpu4.south) -- ++(0,-0.45);
+\node[font=\tiny] at (12.6,-1.15) {GPU issues/schedules I/O};
+
+\draw[-{Latex[length=2mm]}, very thick] (-1.6,-1.65) -- (14.2,-1.65);
+\node[font=\scriptsize] at (6.2,-1.95) {Increasing GPU control, decreasing CPU data-path involvement};
+
+\end{tikzpicture}
