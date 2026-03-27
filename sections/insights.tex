@@ -6,7 +6,7 @@ Removing host copy stages shifts pressure to other components: IOMMU mappings, b
 
 \subsection{Control latency dominates fine-grain I/O}
 
-For small requests, queue management and completion signaling costs outweigh payload transfer time. GPU-driven designs gain most when they fuse request generation with compute context and minimize host wakeups \cite{bam2024,silberstein2013gpufs}.
+For small requests, queue management and completion signaling costs outweigh payload transfer time. GPU-driven designs gain most when they fuse request generation with compute context and minimize host wakeups \cite{qureshi2023bam,silberstein2013gpufs}.
 
 \subsection{Concurrency must be topology-aware}
 

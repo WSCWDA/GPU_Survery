@@ -12,7 +12,7 @@ System & Control Plane & Data Plane & Key Architectural Characteristic \\
 \midrule
 GPUfs \cite{silberstein2013gpufs} & CPU + GPU runtime & Staged / managed & File-like interface in GPU programs; emphasizes programmability. \\
 GDS \cite{nvidia_gds_overview} & CPU-coordinated & Direct DMA to GPU & Reduces host bounce buffering; production integration with CUDA stack. \\
-BaM \cite{bam2024} & GPU-initiated + CPU setup & Direct and demand-driven & Fine-grain, high-throughput GPU-initiated storage access model. \\
+BaM \cite{qureshi2023bam} & GPU-initiated + CPU setup & Direct and demand-driven & Fine-grain, high-throughput GPU-initiated storage access model. \\
 GeminiFS \cite{geminifs2025} & Hybrid distributed control & GPU-first data path & Optimizes distributed DL checkpoint and ingest behavior. \\
 \botrule
 \end{tabular}

@@ -18,7 +18,7 @@
 
 \subsection{Disaggregated storage for GPU workloads beyond transport optimization}
 
-\textbf{Problem statement.} NVMe-oF/RDMA enables storage pooling, but disaggregated deployments introduce tail latency, congestion coupling, and isolation challenges not captured by local-direct path models \cite{nvmeof_spec,infiniband_spec,liu2017rackscale}.
+\textbf{Problem statement.} NVMe-oF/RDMA enables storage pooling, but disaggregated deployments introduce tail latency, congestion coupling, and isolation challenges not captured by local-direct path models; emerging coherent-fabric directions further complicate control and placement assumptions \cite{nvmeof_spec,infiniband_spec,liu2017rackscale,cxl_spec}.
 
 \textbf{Why it matters.} GPU clusters increasingly rely on pooled storage for elasticity and multi-tenancy; uncontrolled variance directly reduces accelerator utilization and service-level predictability \cite{zhang2025hpcstoragesurvey,zhong2024distserve}. \textbf{Taxonomy linkage:} deployment model + data path.
 
@@ -54,7 +54,7 @@
 
 \textbf{Why it matters.} Without stable abstractions, system advances are difficult to transfer across frameworks, filesystems, and fabrics, slowing ecosystem-level progress \cite{traub2023compstoragesurvey,zhang2025hpcstoragesurvey}. \textbf{Taxonomy linkage:} all three dimensions.
 
-\textbf{Limitations of existing approaches.} Current interfaces are fragmented by layer (runtime, filesystem, transport), with inconsistent semantics for ordering, completion, and failure handling \cite{nvidia_gdrdma,nvmeof_spec}. \textbf{Research opportunities.} Define an intent-based API stack with explicit contracts for control authority, copy semantics, and recovery behavior, plus portable conformance tests.
+\textbf{Limitations of existing approaches.} Current interfaces are fragmented by layer (runtime, filesystem, transport), with inconsistent semantics for ordering, completion, and failure handling \cite{nvidia_gdrdma,nvmeof_spec}. \textbf{Research opportunities.} Define an intent-based API stack with explicit contracts for control authority, copy semantics, and recovery behavior, plus portable conformance tests and GPU-initiated I/O semantics advocated by recent position work \cite{benhaim2025path}.
 
 \paragraph{Cross-cutting synthesis.}
 Across these problems, common root causes are clear: CPU-centric control persists even when data paths modernize; data movement is optimized locally rather than end-to-end; and GPU-native abstractions remain immature. Future progress therefore depends on co-designing control, data path, and deployment policies as one system, rather than treating transport acceleration as a complete solution \cite{qureshi2023bam,nvidia_gds_overview,geminifs2025,murray2021tfdata}.
